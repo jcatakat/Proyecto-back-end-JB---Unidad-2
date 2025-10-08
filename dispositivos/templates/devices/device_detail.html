@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h1>{{ device.name }}</h1>
+<p><strong>Categoría:</strong> {{ device.category.name }}</p>
+<p><strong>Zona:</strong> {{ device.zone.name }}</p>
+<p><strong>Organización:</strong> {{ device.organization.name }}</p>
+
+<hr>
+
+<h3>Mediciones</h3>
+{% if measurements %}
+<table class="table">
+  <thead>
+    <tr><th>Fecha</th><th>Valor</th></tr>
+  </thead>
+  <tbody>
+    {% for m in measurements %}
+      <tr>
+        <td>{{ m.created_at|date:"Y-m-d H:i" }}</td>
+        <td>{{ m.value }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  <p>No hay mediciones registradas para este dispositivo.</p>
+{% endif %}
+
+<h3>Alertas</h3>
+{% if alerts %}
+<ul>
+  {% for a in alerts %}
+    <li>
+      {{ a.created_at|date:"Y-m-d H:i" }} — 
+      <strong>{{ a.severity }}</strong>: {{ a.message }}
+    </li>
+  {% endfor %}
+</ul>
+{% else %}
+  <p>No hay alertas para este dispositivo.</p>
+{% endif %}
+
+<a href="{% url 'device_list' %}" class="btn btn-secondary mt-3">← Volver a la lista</a>
+
+{% endblock %}

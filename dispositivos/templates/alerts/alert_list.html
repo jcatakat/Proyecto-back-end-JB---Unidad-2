@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Alertas</h1>
+<ul class="list-group">
+  {% for a in alerts %}
+    <li class="list-group-item">
+      {{ a.created_at|date:"Y-m-d H:i" }} — 
+      <strong>{{ a.device.name }}</strong> —
+      <span class="badge bg-danger">{{ a.severity }}</span> :
+      {{ a.message }}
+    </li>
+  {% empty %}
+    <li class="list-group-item">No hay alertas registradas.</li>
+  {% endfor %}
+</ul>
+{% endblock %}
