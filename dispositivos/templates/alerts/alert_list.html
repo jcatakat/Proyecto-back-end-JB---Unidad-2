@@ -1,16 +1,36 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% block title %}Alertas · EcoEnergy{% endblock %}
+{% block menu_alerts %}active{% endblock %}
+
 {% block content %}
-<h1>Alertas</h1>
-<ul class="list-group">
-  {% for a in alerts %}
-    <li class="list-group-item">
-      {{ a.created_at|date:"Y-m-d H:i" }} — 
-      <strong>{{ a.device.name }}</strong> —
-      <span class="badge bg-danger">{{ a.severity }}</span> :
-      {{ a.message }}
-    </li>
-  {% empty %}
-    <li class="list-group-item">No hay alertas registradas.</li>
-  {% endfor %}
-</ul>
+<div class="card p-3 shadow-sm">
+  <h5 class="mb-3">Alertas</h5>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr><th>Fecha/Hora</th><th>Dispositivo</th><th>Regla</th><th>Severidad</th><th>Mensaje</th></tr>
+      </thead>
+      <tbody>
+        {% for a in alerts %}
+          <tr>
+            <td>{{ a.occurred_at|date:"Y-m-d H:i" }}</td>
+            <td><a href="{% url 'device_detail' a.device.id %}">{{ a.device.name }}</a></td>
+            <td>{{ a.alert_rule.name }}</td>
+            <td>
+              {% with s=a.alert_rule.severity %}
+                {% if s == "CRITICAL" %}<span class="alert-chip chip-critical">CRITICAL</span>
+                {% elif s == "HIGH" %}<span class="alert-chip chip-high">HIGH</span>
+                {% elif s == "MEDIUM" %}<span class="alert-chip chip-medium">MEDIUM</span>
+                {% else %}<span class="alert-chip chip-low">LOW</span>{% endif %}
+              {% endwith %}
+            </td>
+            <td>{{ a.message|default:"—" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-center">Sin alertas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

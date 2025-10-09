@@ -1,20 +1,25 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% block title %}Mediciones · EcoEnergy{% endblock %}
+{% block menu_meas %}active{% endblock %}
+
 {% block content %}
-<h1>Mediciones</h1>
-<table class="table table-striped">
-  <thead>
-    <tr><th>Fecha</th><th>Dispositivo</th><th>Valor</th></tr>
-  </thead>
-  <tbody>
-    {% for m in measurements %}
-      <tr>
-        <td>{{ m.created_at|date:"Y-m-d H:i" }}</td>
-        <td>{{ m.device.name }}</td>
-        <td>{{ m.value }}</td>
-      </tr>
-    {% empty %}
-      <tr><td colspan="3">No hay mediciones registradas.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="card p-3 shadow-sm">
+  <h5 class="mb-3">Últimas 50 mediciones</h5>
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead><tr><th>Fecha/Hora</th><th>Dispositivo</th><th class="text-end">Energía (kWh)</th></tr></thead>
+      <tbody>
+        {% for m in measurements %}
+          <tr>
+            <td>{{ m.measured_at|date:"Y-m-d H:i" }}</td>
+            <td><a href="{% url 'device_detail' m.device.id %}">{{ m.device.name }}</a></td>
+            <td class="text-end">{{ m.energy_kwh }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="3" class="text-center">Sin mediciones.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

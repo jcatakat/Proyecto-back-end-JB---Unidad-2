@@ -1,46 +1,65 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% block title %}{{ device.name }} · Dispositivo{% endblock %}
+{% block menu_devices %}active{% endblock %}
+
 {% block content %}
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card p-3 shadow-sm">
+      <h5 class="mb-2">{{ device.name }}</h5>
+      <dl class="row mb-0">
+        <dt class="col-4">Organización</dt><dd class="col-8">{{ device.organization.name }}</dd>
+        <dt class="col-4">Zona</dt><dd class="col-8">{{ device.zone.name }}</dd>
+        <dt class="col-4">Producto</dt><dd class="col-8">{{ device.product.name }}</dd>
+        <dt class="col-4">Categoría</dt><dd class="col-8">{{ device.product.category.name }}</dd>
+        <dt class="col-4">Potencia máx.</dt><dd class="col-8">{{ device.max_power_w }} W</dd>
+        <dt class="col-4">Serie</dt><dd class="col-8">{{ device.serial_number|default:"—" }}</dd>
+      </dl>
+    </div>
+  </div>
 
-<h1>{{ device.name }}</h1>
-<p><strong>Categoría:</strong> {{ device.category.name }}</p>
-<p><strong>Zona:</strong> {{ device.zone.name }}</p>
-<p><strong>Organización:</strong> {{ device.organization.name }}</p>
+  <div class="col-lg-7">
+    <div class="card p-3 shadow-sm mb-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Mediciones</h6>
+        <a class="small" href="{% url 'measurement_list' %}">Ver todas</a>
+      </div>
+      <table class="table table-sm mt-2 mb-0">
+        <thead><tr><th>Fecha/Hora</th><th class="text-end">Energía (kWh)</th></tr></thead>
+        <tbody>
+          {% for m in measurements %}
+            <tr><td>{{ m.measured_at|date:"Y-m-d H:i" }}</td><td class="text-end">{{ m.energy_kwh }}</td></tr>
+          {% empty %}
+            <tr><td colspan="2" class="text-center">Sin mediciones.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
 
-<hr>
-
-<h3>Mediciones</h3>
-{% if measurements %}
-<table class="table">
-  <thead>
-    <tr><th>Fecha</th><th>Valor</th></tr>
-  </thead>
-  <tbody>
-    {% for m in measurements %}
-      <tr>
-        <td>{{ m.created_at|date:"Y-m-d H:i" }}</td>
-        <td>{{ m.value }}</td>
-      </tr>
-    {% endfor %}
-  </tbody>
-</table>
-{% else %}
-  <p>No hay mediciones registradas para este dispositivo.</p>
-{% endif %}
-
-<h3>Alertas</h3>
-{% if alerts %}
-<ul>
-  {% for a in alerts %}
-    <li>
-      {{ a.created_at|date:"Y-m-d H:i" }} — 
-      <strong>{{ a.severity }}</strong>: {{ a.message }}
-    </li>
-  {% endfor %}
-</ul>
-{% else %}
-  <p>No hay alertas para este dispositivo.</p>
-{% endif %}
-
-<a href="{% url 'device_list' %}" class="btn btn-secondary mt-3">← Volver a la lista</a>
-
+    <div class="card p-3 shadow-sm">
+      <div class="d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Alertas</h6>
+        <a class="small" href="{% url 'alert_list' %}">Ver todas</a>
+      </div>
+      <ul class="list-unstyled mt-3 mb-0">
+        {% for a in alerts %}
+          <li class="mb-2">
+            <strong>{{ a.alert_rule.name }}</strong>
+            <small class="text-muted"> · {{ a.occurred_at|date:"Y-m-d H:i" }}</small>
+            {% with s=a.alert_rule.severity %}
+              {% if s == "CRITICAL" %}<span class="alert-chip chip-critical">CRITICAL</span>
+              {% elif s == "HIGH" %}<span class="alert-chip chip-high">HIGH</span>
+              {% elif s == "MEDIUM" %}<span class="alert-chip chip-medium">MEDIUM</span>
+              {% else %}<span class="alert-chip chip-low">LOW</span>{% endif %}
+            {% endwith %}
+            {% if a.message %}<div class="small">{{ a.message }}</div>{% endif %}
+          </li>
+        {% empty %}
+          <li>No hay alertas.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
 {% endblock %}
+

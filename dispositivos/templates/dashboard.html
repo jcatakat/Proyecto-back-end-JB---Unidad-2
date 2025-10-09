@@ -1,223 +1,93 @@
-{% load static %}
+{% extends "base.html" %}
+{% block title %}Dashboard · EcoEnergy{% endblock %}
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <title>EcoEnergy - Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <style>
-    body {
-      background: #f8f9fa;
-    }
-    .badge-light {
-      background-color: #e9ecef;
-      color: #212529;
-    }
-    .device-card {
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      padding: 1rem;
-      margin-bottom: 1rem;
-      background: white;
-      cursor: pointer;
-      transition: box-shadow 0.2s ease-in-out;
-    }
-    .device-card:hover {
-      box-shadow: 0 0 11px rgba(33,33,33,.2);
-    }
-    .alert-label {
-      font-weight: 700;
-      font-size: 0.85rem;
-      padding: 0.2rem 0.6rem;
-      border-radius: 10px;
-      color: white;
-      display: inline-block;
-      margin-left: 0.5rem;
-    }
-    .alert-grave {
-      background-color: #dc3545;
-    }
-    .alert-alto {
-      background-color: #ffc107;
-      color: #212529;
-    }
-    .alert-mediano {
-      background-color: #0d6efd;
-    }
-    .filter-select {
-      max-width: 180px;
-    }
-  </style>
-</head>
-<body>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4">
-    <a class="navbar-brand" href="#">EcoEnergy</a>
-    <div class="collapse navbar-collapse">
-      <ul class="navbar-nav me-auto">
-        <li class="nav-item"><a href="#" class="nav-link active">Dashboard</a></li>
-        <li class="nav-item"><a href="{%url 'device_list'%}" class="nav-link">Dispositivos</a></li>
-        <li class="nav-item"><a href="#" class="nav-link">Mediciones</a></li>
-      </ul>
-      <div>
-        <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm me-2">Iniciar sesión</a>
-        <a href="{% url 'register' %}" class="btn btn-outline-light btn-sm">Registrarse</a>
-      </div>
-    </div>
-  </nav>
-
-  <main class="container my-4">
-    <div class="row g-3 mb-4">
-      <!-- Dispositivos por Categoría -->
-      <div class="col-md-4">
-        <div class="card p-3 shadow-sm">
-          <h6 class="text-uppercase fw-bold">Dispositivos por Categoría</h6>
-          <ul class="list-group list-group-flush mt-3">
-            {% for cat in categories %}
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                {{ cat.name }}
-                <span class="badge bg-secondary rounded-pill">{{ cat.device_count }}</span>
-              </li>
-            {% empty %}
-              <li class="list-group-item">No hay categorías.</li>
-            {% endfor %}
-          </ul>
-        </div>
-      </div>
-
-      <div class="col-md-4">
-        <div class="card p-3 shadow-sm">
-          <h6 class="text-uppercase fw-bold">Dispositivos por Zona</h6>
-          <ul class="list-group list-group-flush mt-3">
-            {% for zone in zones %}
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                {{ zone.name }}
-                <span class="badge bg-secondary rounded-pill">{{ zone.device_count }}</span>
-              </li>
-            {% empty %}
-              <li class="list-group-item">No hay zonas.</li>
-            {% endfor %}
-          </ul>
-        </div>
-      </div>
-
-      <div class="col-md-4">
-        <div class="card p-3 shadow-sm">
-          <h6 class="text-uppercase fw-bold">Alertas de la Semana</h6>
-          <div class="mt-3">
-            <span class="alert-label alert-grave">Grave: {{ alert_counts.grave }}</span>
-            <span class="alert-label alert-alto">Alto: {{ alert_counts.alto }}</span>
-            <span class="alert-label alert-mediano">Mediano: {{ alert_counts.mediano }}</span>
-          </div>
-          <small class="text-muted mt-2 d-block">* Criterios de severidad configurables por dispositivo.</small>
-        </div>
-      </div>
-    </div>
-
-    <div class="row g-3 mb-4">
-      <div class="col-md-7">
-        <div class="card p-3 shadow-sm">
-          <div class="d-flex justify-content-between align-items-center">
-            <h6 class="text-uppercase fw-bold">Últimas 10 Mediciones</h6>
-            <a href="{% url 'measurement_list' %}" class="small">Ver todas</a>
-          </div>
-          <table class="table table-sm mt-2 mb-0">
-            <thead>
-              <tr>
-                <th>Fecha/Hora</th>
-                <th>Dispositivo</th>
-                <th>Valor</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for m in measurements %}
-              <tr>
-                <td>{{ m.created_at|date:"Y-m-d H:i" }}</td>
-                <td><a href="{% url 'device_detail' m.device.id %}">{{ m.device.name }}</a></td>
-                <td>{{ m.value }}</td>
-              </tr>
-              {% empty %}
-              <tr><td colspan="3" class="text-center">No hay mediciones.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="col-md-5">
-        <div class="card p-3 shadow-sm">
-          <div class="d-flex justify-content-between align-items-center">
-            <h6 class="text-uppercase fw-bold">Alertas Recientes</h6>
-            <a href="{% url 'alert_list' %}" class="small">Ver todas</a>
-          </div>
-          <ul class="list-unstyled mt-3">
-            {% for alert in alerts %}
-            <li class="mb-3">
-              <div><strong>{{ alert.device.name }}</strong></div>
-              <div>{{ alert.message }}</div>
-              <div>
-                {% if alert.severity == 'grave' %}
-                  <span class="alert-label alert-grave">Grave</span>
-                {% elif alert.severity == 'alto' %}
-                  <span class="alert-label alert-alto">Alto</span>
-                {% elif alert.severity == 'mediano' %}
-                  <span class="alert-label alert-mediano">Mediano</span>
-                {% endif %}
-              </div>
-            </li>
-            {% empty %}
-              <li>No hay alertas recientes.</li>
-            {% endfor %}
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <div class="card p-3 shadow-sm">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="text-uppercase fw-bold mb-0">Dispositivos</h6>
-        <a href="{% url 'device_list' %}">Ir a listado</a>
-      </div>
-      <form method="get" class="row g-2 align-items-center mb-3">
-        <div class="col-auto">
-          <select name="category" class="form-select filter-select">
-            <option value="">Todas Categorías</option>
-            {% for cat in categories %}
-            <option value="{{ cat.id }}" {% if cat.id|stringformat:"s" == request.GET.category %}selected{% endif %}>{{ cat.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-auto">
-          <select name="zone" class="form-select filter-select">
-            <option value="">Todas Zonas</option>
-            {% for zone in zones %}
-            <option value="{{ zone.id }}" {% if zone.id|stringformat:"s" == request.GET.zone %}selected{% endif %}>{{ zone.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-auto">
-          <button class="btn btn-dark" type="submit">Aplicar filtros</button>
-        </div>
-      </form>
-      <div class="row">
-        {% for device in devices %}
-        <div class="col-md-4">
-          <div class="device-card">
-            <div><strong>{{ device.name }}</strong></div>
-            <small>{{ device.category.name }} · {{ device.zone.name }}</small>
-          </div>
-        </div>
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="card p-3 h-100">
+      <h6 class="text-uppercase fw-bold">Dispositivos por categoría</h6>
+      <ul class="list-group list-group-flush mt-2">
+        {% for row in devices_by_category %}
+          <li class="list-group-item d-flex justify-content-between">
+            <span>{{ row.product__category__name|default:"(Sin categoría)" }}</span>
+            <span class="badge bg-secondary">{{ row.total }}</span>
+          </li>
         {% empty %}
-          <p>No hay dispositivos para mostrar.</p>
+          <li class="list-group-item">Sin datos.</li>
         {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card p-3 h-100">
+      <h6 class="text-uppercase fw-bold">Dispositivos por zona</h6>
+      <ul class="list-group list-group-flush mt-2">
+        {% for row in devices_by_zone %}
+          <li class="list-group-item d-flex justify-content-between">
+            <span>{{ row.zone__name|default:"(Sin zona)" }}</span>
+            <span class="badge bg-secondary">{{ row.total }}</span>
+          </li>
+        {% empty %}
+          <li class="list-group-item">Sin datos.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card p-3 h-100">
+      <h6 class="text-uppercase fw-bold">Alertas recientes</h6>
+      <ul class="list-group list-group-flush mt-2">
+        {% for a in alerts %}
+          <li class="list-group-item">
+            <div class="small text-muted">{{ a.occurred_at|date:"Y-m-d H:i" }}</div>
+            <div><strong>{{ a.device.name }}</strong></div>
+            <div>{{ a.alert_rule.name }} · <span class="badge bg-danger">{{ a.alert_rule.severity }}</span></div>
+          </li>
+        {% empty %}
+          <li class="list-group-item">No hay alertas.</li>
+        {% endfor %}
+      </ul>
+      <div class="mt-2 text-end"><a href="{% url 'alert_list' %}">Ver todas</a></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card p-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <h6 class="text-uppercase fw-bold mb-0">Últimas mediciones</h6>
+        <a href="{% url 'measurement_list' %}" class="small">Ver todas</a>
+      </div>
+      <div class="table-responsive mt-2">
+        <table class="table table-sm align-middle">
+          <thead><tr><th>Fecha/Hora</th><th>Dispositivo</th><th class="text-end">Energía (kWh)</th></tr></thead>
+          <tbody>
+            {% for m in measurements %}
+              <tr>
+                <td>{{ m.measured_at|date:"Y-m-d H:i" }}</td>
+                <td><a href="{% url 'device_detail' m.device.id %}">{{ m.device.name }}</a></td>
+                <td class="text-end">{{ m.energy_kwh }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="3" class="text-center">Sin mediciones.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
-  </main>
+  </div>
 
-  <footer class="text-center text-muted py-3">
-    &copy; 2025 EcoEnergy - Soporte
-  </footer>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+  <div class="col-lg-5">
+    <div class="card p-3">
+      <h6 class="text-uppercase fw-bold mb-2">Accesos rápidos</h6>
+      <div class="d-grid gap-2">
+        <a class="btn btn-outline-primary" href="{% url 'device_list' %}">Ver dispositivos</a>
+        <a class="btn btn-outline-secondary" href="{% url 'alert_list' %}">Ver alertas</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

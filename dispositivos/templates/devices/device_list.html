@@ -1,56 +1,48 @@
-{% block title %}Dispositivos - EcoEnergy{% endblock %}
+{% extends "base.html" %}
+{% block title %}Dispositivos · EcoEnergy{% endblock %}
+{% block menu_devices %}active{% endblock %}
 
 {% block content %}
-<h3 class="mb-4">Listado de Dispositivos</h3>
+<div class="card p-3 shadow-sm">
+  <h5 class="mb-3">Dispositivos</h5>
 
-<form method="get" class="row g-3 mb-4">
-  <div class="col-auto">
-    <select name="category" class="form-select">
-      <option value="">Todas las Categorías</option>
-      {% for cat in categories %}
-      <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="col-auto">
-    <select name="zone" class="form-select">
-      <option value="">Todas las Zonas</option>
-      {% for zone in zones %}
-      <option value="{{ zone.id }}" {% if request.GET.zone == zone.id|stringformat:"s" %}selected{% endif %}>{{ zone.name }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="col-auto">
-    <button type="submit" class="btn btn-dark">Filtrar</button>
-    <a href="{% url 'device_list' %}" class="btn btn-outline-secondary">Limpiar</a>
-  </div>
-</form>
+  <form method="get" class="row g-2 align-items-center mb-3">
+    <div class="col-auto">
+      <label class="form-label mb-0 small">Categoría</label>
+      <select name="category" class="form-select">
+        <option value="">Todas</option>
+        {% for c in categories %}
+          <option value="{{ c.id }}" {% if request.GET.category == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label mb-0 small">Zona</label>
+      <select name="zone" class="form-select">
+        <option value="">Todas</option>
+        {% for z in zones %}
+          <option value="{{ z.id }}" {% if request.GET.zone == z.id|stringformat:"s" %}selected{% endif %}>{{ z.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-dark mt-4" type="submit">Filtrar</button>
+    </div>
+  </form>
 
-<div class="card shadow-sm">
-  <div class="card-body p-0">
-    <table class="table table-striped mb-0">
-      <thead class="table-dark">
-        <tr>
-          <th>Nombre</th>
-          <th>Categoría</th>
-          <th>Zona</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead><tr><th>Nombre</th><th>Organización</th><th>Zona</th><th>Producto</th></tr></thead>
       <tbody>
-        {% for device in devices %}
-        <tr>
-          <td>{{ device.name }}</td>
-          <td>{{ device.category.name }}</td>
-          <td>{{ device.zone.name }}</td>
-          <td>
-            <a href="{% url 'device_detail' device.id %}" class="btn btn-sm btn-outline-primary">Ver Detalle</a>
-          </td>
-        </tr>
+        {% for d in devices %}
+          <tr>
+            <td><a href="{% url 'device_detail' d.id %}">{{ d.name }}</a></td>
+            <td>{{ d.organization.name }}</td>
+            <td>{{ d.zone.name }}</td>
+            <td>{{ d.product.name }} ({{ d.product.category.name }})</td>
+          </tr>
         {% empty %}
-        <tr>
-          <td colspan="4" class="text-center">No hay dispositivos registrados.</td>
-        </tr>
+          <tr><td colspan="4" class="text-center">No hay dispositivos.</td></tr>
         {% endfor %}
       </tbody>
     </table>
