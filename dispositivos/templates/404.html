@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}No encontrado{% endblock %}
+{% block content %}
+<div class="text-center my-5">
+  <h1 class="display-6">🔎 Página no encontrada</h1>
+  <p>Lo que buscas no existe o fue movido.</p>
+  <a href="{% url 'dashboard' %}" class="btn btn-secondary btn-sm">Volver al inicio</a>
+</div>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Zonas{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>Listado de Zonas</h3>
+  {% if perms.dispositivos.add_zone %}
+    <a href="{% url 'zona_create' %}" class="btn btn-primary btn-sm">Nueva Zona</a>
+  {% endif %}
+</div>
+
+<table class="table table-hover align-middle" id="tablaZonas">
+  <thead class="table-light">
+    <tr>
+      <th>#</th><th>Nombre</th><th>Organización</th>
+      {% if perms.dispositivos.change_zone or perms.dispositivos.delete_zone %}
+        <th style="width:140px">Acciones</th>
+      {% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for z in zonas %}
+    <tr id="row-{{ z.id }}">
+      <td>{{ forloop.counter }}</td>
+      <td class="zona-name">{{ z.name }}</td>
+      <td>{{ z.organization.name }}</td>
+      {% if perms.dispositivos.change_zone or perms.dispositivos.delete_zone %}
+      <td>
+        {% if perms.dispositivos.change_zone %}
+          <a href="{% url 'zona_edit' z.id %}" class="btn btn-warning btn-sm">Editar</a>
+        {% endif %}
+        {% if perms.dispositivos.delete_zone %}
+          <button class="btn btn-danger btn-sm btn-delete"
+                  data-id="{{ z.id }}"
+                  data-url="{% url 'zona_delete_ajax' z.id %}">
+            Eliminar
+          </button>
+        {% endif %}
+      </td>
+      {% endif %}
+    </tr>
+    {% empty %}
+      <tr><td colspan="4" class="text-center">No hay zonas.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  document.addEventListener("click", async (ev) => {
+    const btn = ev.target.closest(".btn-delete");
+    if (!btn) return;
+
+    const row = btn.closest("tr");
+    const url = btn.dataset.url;
+    const nombre = row.querySelector(".zona-name")?.textContent?.trim() || "la zona";
+
+    const confirm = await Swal.fire({
+      title: `¿Eliminar ${nombre}?`,
+      text: "Esta acción no se puede deshacer.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+    if (!confirm.isConfirmed) return;
+
+    try {
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": window.CSRF_TOKEN,         // ← definido en base.html (abajo)
+          "X-Requested-With": "XMLHttpRequest",
+          "Accept": "application/json",
+        },
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data.ok) throw new Error(data.message || "No se pudo eliminar");
+
+      row.remove();
+      // reindexar
+      Array.from(document.querySelectorAll("#tablaZonas tbody tr")).forEach((tr, i) => {
+        tr.children[0].textContent = (i + 1).toString();
+      });
+      Swal.fire({icon:"success", title:data.message, timer:1800, showConfirmButton:false});
+    } catch (err) {
+      Swal.fire({icon:"error", title:"Error al eliminar", text: err.message});
+    }
+  });
+</script>
+{% endblock %}

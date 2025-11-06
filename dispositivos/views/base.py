@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.db.models import Count
 
 from organizations.models import UserProfile
-from .models import Device, Measurement, AlertEvent, Category, Zone
+from ..models import Device, Measurement, AlertEvent, Category, Zone
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -185,43 +185,3 @@ def alert_list(request):
     alerts = alerts.order_by("-occurred_at")
     return render(request, "alerts/alert_list.html", {"alerts": alerts})
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# AUTH BÁSICA (para flujos simples de login/registro)
-# ─────────────────────────────────────────────────────────────────────────────
-def login_view(request):
-    if request.method == "POST":
-        form = AuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            username = form.cleaned_data.get("username")
-            password = form.cleaned_data.get("password")
-            user = authenticate(username=username, password=password)
-            if user is not None:
-                login(request, user)
-                return redirect("dashboard")
-            messages.error(request, "Credenciales inválidas")
-        else:
-            messages.error(request, "Credenciales inválidas")
-    else:
-        form = AuthenticationForm()
-    return render(request, "accounts/login.html", {"form": form})
-
-
-def register_view(request):
-    if request.method == "POST":
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Registro exitoso, ahora puedes iniciar sesión")
-            return redirect("login")
-    else:
-        form = UserCreationForm()
-    return render(request, "accounts/register.html", {"form": form})
-
-
-def password_reset_view(request):
-    if request.method == "POST":
-        email = request.POST.get("email")
-        messages.success(request, f"Se enviaron instrucciones a {email} (simulado)")
-        return redirect("login")
-    return render(request, "accounts/password_reset.html")

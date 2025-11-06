@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Acceso denegado{% endblock %}
+{% block content %}
+<div class="text-center my-5">
+  <h1 class="display-6">🚫 Acceso denegado</h1>
+  <p>No tienes permisos para ver esta página.</p>
+  <a href="{% url 'zona_list' %}" class="btn btn-primary btn-sm">Volver</a>
+</div>
+{% endblock %}

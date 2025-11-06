@@ -25,14 +25,39 @@
         <li class="nav-item"><a class="nav-link" href="{% url 'device_list' %}">Dispositivos</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'measurement_list' %}">Mediciones</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'alert_list' %}">Alertas</a></li>
+        {% if perms.dispositivos.view_zone %}
+        <li class="nav-item"><a class="nav-link" href="{% url 'zona_list' %}">Zonas</a></li>
+        {% endif %}
       </ul>
+
       <div class="d-flex gap-2">
-        <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm">Iniciar sesión</a>
-        <a href="{% url 'register' %}" class="btn btn-outline-light btn-sm">Registrarse</a>
+        {% if request.user.is_authenticated %}
+          <span class="navbar-text text-light small">
+            Hola, {{ request.user.username }}
+          </span>
+          {# si tienes una ruta de logout #}
+          <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">Salir</a>
+        {% else %}
+          <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm">Iniciar sesión</a>
+          <a href="{% url 'register' %}" class="btn btn-outline-light btn-sm">Registrarse</a>
+        {% endif %}
       </div>
     </div>
   </div>
 </nav>
+
+{# === BLOQUE DE MENSAJES (flash) — Añadido === #}
+{% if messages %}
+  <div class="container mt-3">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+{# === FIN BLOQUE MENSAJES === #}
 
 <main class="container my-4">
   {% block content %}{% endblock %}
@@ -43,6 +68,20 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+{# Helper CSRF global para usar en fetch/AJAX como header "X-CSRFToken": window.CSRF_TOKEN #}
+<script>
+  (function(){
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+    window.CSRF_TOKEN = getCookie('csrftoken');
+  })();
+</script>
+
 {% block extra_js %}{% endblock %}
 </body>
 </html>
+

@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}Listado de Dispositivos{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+    <div class="row w-100">
+      <div class="col">
+        <h3 class="mb-2 mb-md-0">Listado de Dispositivos</h3>
+      </div>
+
+      <div class="col-auto">
+        <div class="row g-2 align-items-center">
+          <!-- BUSCADOR -->
+          <div class="col-auto">
+            <form class="d-flex" method="get">
+              <input class="form-control me-2" type="search" name="q"
+                     placeholder="Buscar por nombre, serie, zona, organización, categoría, producto" value="{{ q }}">
+              <input type="hidden" name="sort" value="{{ sort }}">
+              <input type="hidden" name="page_size" value="{{ page_size }}">
+              {% if q %}<a href="{% url 'device_list_advanced' %}" class="btn btn-outline-secondary me-2">Limpiar</a>{% endif %}
+              <button class="btn btn-primary" type="submit">Buscar</button>
+            </form>
+          </div>
+
+          <!-- PAGE SIZE -->
+          <div class="col-auto">
+            <form method="get">
+              <input type="hidden" name="q" value="{{ q }}">
+              <input type="hidden" name="sort" value="{{ sort }}">
+              <select class="form-select" name="page_size" onchange="this.form.submit()">
+                <option value="5"  {% if page_size == 5  %}selected{% endif %}>5 por página</option>
+                <option value="10" {% if page_size == 10 %}selected{% endif %}>10 por página</option>
+                <option value="25" {% if page_size == 25 %}selected{% endif %}>25 por página</option>
+                <option value="50" {% if page_size == 50 %}selected{% endif %}>50 por página</option>
+              </select>
+            </form>
+          </div>
+
+          {% if perms.dispositivos.add_device %}
+          <div class="col-auto">
+            <a href="{% url 'device_create' %}" class="btn btn-primary">+ Nuevo Dispositivo</a>
+          </div>
+          {% endif %}
+
+          <div class="col-auto">
+            <a class="btn btn-outline-success"
+               href="{% url 'device_export' %}?q={{ q }}&sort={{ sort }}">Exportar Excel</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-muted mb-2">
+    Resultados: {{ total }}{% if q %} para "<strong>{{ q }}</strong>"{% endif %}
+  </p>
+
+  <table class="table table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th style="width:70px">#</th>
+        <th><a href="?{% if querystring %}{{ querystring }}&{% endif %}sort=name">Nombre</a></th>
+        <th>Serie</th>
+        <th><a href="?{% if querystring %}{{ querystring }}&{% endif %}sort=product__name">Producto</a></th>
+        <th><a href="?{% if querystring %}{{ querystring }}&{% endif %}sort=product__category__name">Categoría</a></th>
+        <th><a href="?{% if querystring %}{{ querystring }}&{% endif %}sort=zone__name">Zona</a></th>
+        <th><a href="?{% if querystring %}{{ querystring }}&{% endif %}sort=organization__name">Organización</a></th>
+        <th>Pot. máx (W)</th>
+        {% if perms.dispositivos.change_device or perms.dispositivos.delete_device %}
+        <th style="width:170px">Acciones</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in page_obj.object_list %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td class="device-name">
+          <a href="{% url 'device_detail' d.pk %}">{{ d.name }}</a>
+        </td>
+        <td>{{ d.serial_number|default:"-" }}</td>
+        <td>{{ d.product.name }}</td>
+        <td>{{ d.product.category.name }}</td>
+        <td>{{ d.zone.name }}</td>
+        <td>{{ d.organization.name }}</td>
+        <td>{{ d.max_power_w }}</td>
+        {% if perms.dispositivos.change_device or perms.dispositivos.delete_device %}
+        <td class="text-nowrap">
+          {% if perms.dispositivos.change_device %}
+          <a class="btn btn-sm btn-secondary" href="{% url 'device_edit' d.pk %}">Editar</a>
+          {% endif %}
+          {% if perms.dispositivos.delete_device %}
+          <button class="btn btn-sm btn-danger btn-delete"
+                  data-url="{% url 'device_delete_ajax' d.id %}">
+            Eliminar
+          </button>
+          {% endif %}
+        </td>
+        {% endif %}
+      </tr>
+      {% empty %}
+      <tr><td colspan="9" class="text-center">No hay datos.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav aria-label="Paginación">
+    <ul class="pagination">
+      {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+        {% if num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+          <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+            {% if page_obj.number == num %}
+              <span class="page-link">{{ num }}</span>
+            {% else %}
+              <a class="page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ num }}">{{ num }}</a>
+            {% endif %}
+          </li>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.next_page_number }}">Siguiente</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  function getCookie(name){
+    const v=`; ${document.cookie}`.split(`; ${name}=`);
+    if(v.length===2) return v.pop().split(";").shift();
+  }
+  const csrftoken=getCookie("csrftoken");
+
+  document.addEventListener("click", async (ev)=>{
+    const btn=ev.target.closest(".btn-delete");
+    if(!btn) return;
+
+    const row=btn.closest("tr");
+    const nombre=row.querySelector(".device-name")?.textContent?.trim() || "el dispositivo";
+
+    const confirm=await Swal.fire({
+      title:`¿Eliminar ${nombre}?`,
+      text:"Esta acción no se puede deshacer.",
+      icon:"warning",
+      showCancelButton:true,
+      confirmButtonText:"Sí, eliminar",
+      cancelButtonText:"Cancelar",
+    });
+    if(!confirm.isConfirmed) return;
+
+    const resp=await fetch(btn.dataset.url,{
+      method:"POST",
+      headers:{
+        "X-CSRFToken":csrftoken,
+        "X-Requested-With":"XMLHttpRequest",
+        "Accept":"application/json"
+      }
+    });
+    if(!resp.ok) return Swal.fire({icon:"error",title:"Error al eliminar"});
+
+    const data=await resp.json();
+    if(data.ok){
+      row.remove();
+      Swal.fire({icon:"success",title:data.message,timer:1600,showConfirmButton:false});
+    }
+  });
+</script>
+{% endblock %}

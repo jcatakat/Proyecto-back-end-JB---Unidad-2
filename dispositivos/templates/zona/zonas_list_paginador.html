@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}Listado de Zonas{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+  <!-- Encabezado + acciones -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+    <div class="row w-100">
+      <div class="col">
+        <h3 class="mb-2 mb-md-0">Listado de Zonas</h3>
+      </div>
+
+      <div class="col-auto">
+        <div class="row g-2 align-items-center">
+          {# --- BUSCADOR --- #}
+          <div class="col-auto">
+            <form class="d-flex" method="get">
+              <input class="form-control me-2" type="search" name="q"
+                     placeholder="Buscar por nombre u organización" value="{{ q }}">
+              <input type="hidden" name="sort" value="{{ sort }}">
+              <input type="hidden" name="page_size" value="{{ page_size }}">
+              {% if q %}<a href="{% url 'zona_list' %}" class="btn btn-outline-secondary me-2">Limpiar</a>{% endif %}
+              <button class="btn btn-primary" type="submit">Buscar</button>
+            </form>
+          </div>
+
+          {# --- TAMAÑO DE PÁGINA (hardcode, no necesita contexto extra) --- #}
+          <div class="col-auto">
+            <form method="get">
+              <input type="hidden" name="q" value="{{ q }}">
+              <input type="hidden" name="sort" value="{{ sort }}">
+              <select class="form-select" name="page_size" onchange="this.form.submit()">
+                <option value="5"  {% if page_size == 5  %}selected{% endif %}>5 por página</option>
+                <option value="10" {% if page_size == 10 %}selected{% endif %}>10 por página</option>
+                <option value="25" {% if page_size == 25 %}selected{% endif %}>25 por página</option>
+                <option value="50" {% if page_size == 50 %}selected{% endif %}>50 por página</option>
+              </select>
+            </form>
+          </div>
+
+          {% if perms.dispositivos.add_zone %}
+          <div class="col-auto">
+            <a href="{% url 'zona_create' %}" class="btn btn-primary">+ Nueva Zona</a>
+          </div>
+          {% endif %}
+
+          <div class="col-auto">
+            <a class="btn btn-outline-success"
+               href="{% url 'zona_export' %}?q={{ q }}&sort={{ sort }}">Exportar Excel</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-muted mb-2">
+    Resultados: {{ total }}{% if q %} para "<strong>{{ q }}</strong>"{% endif %}
+  </p>
+
+  <!-- Tabla -->
+  <table class="table table-hover align-middle" id="tablaZonas">
+    <thead class="table-light">
+      <tr>
+        <th style="width:70px">#</th>
+        <th>
+          <a href="?{% if querystring %}{{ querystring }}&{% endif %}sort=name">Nombre</a>
+        </th>
+        <th>
+          <a href="?{% if querystring %}{{ querystring }}&{% endif %}sort=organization__name">Organización</a>
+        </th>
+        {% if perms.dispositivos.change_zone or perms.dispositivos.delete_zone %}
+        <th style="width:160px">Acciones</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for z in page_obj.object_list %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td class="zona-name">{{ z.name }}</td>
+        <td>{{ z.organization.name }}</td>
+        {% if perms.dispositivos.change_zone or perms.dispositivos.delete_zone %}
+        <td class="text-nowrap">
+          {% if perms.dispositivos.change_zone %}
+          <a class="btn btn-sm btn-secondary" href="{% url 'zona_edit' z.pk %}">Editar</a>
+          {% endif %}
+          {% if perms.dispositivos.delete_zone %}
+          <button class="btn btn-sm btn-danger btn-delete"
+                  data-id="{{ z.id }}"
+                  data-url="{% url 'zona_delete_ajax' z.id %}">
+            Eliminar
+          </button>
+          {% endif %}
+        </td>
+        {% endif %}
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-center">No hay datos.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Paginación -->
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav aria-label="Paginación">
+    <ul class="pagination">
+      {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+        {% if num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+          <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+            {% if page_obj.number == num %}
+              <span class="page-link">{{ num }}</span>
+            {% else %}
+              <a class="page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ num }}">{{ num }}</a>
+            {% endif %}
+          </li>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.next_page_number }}">Siguiente</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  // CSRF desde cookie (Django)
+  function getCookie(name){
+    const v = `; ${document.cookie}`.split(`; ${name}=`);
+    if (v.length === 2) return v.pop().split(";").shift();
+  }
+  const csrftoken = getCookie("csrftoken");
+
+  // Eliminar con SweetAlert2 (AJAX)
+  document.addEventListener("click", async (ev) => {
+    const btn = ev.target.closest(".btn-delete");
+    if (!btn) return;
+
+    const row = btn.closest("tr");
+    const nombre = row.querySelector(".zona-name")?.textContent?.trim() || "la zona";
+
+    const confirm = await Swal.fire({
+      title: `¿Eliminar ${nombre}?`,
+      text: "Esta acción no se puede deshacer.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+    if (!confirm.isConfirmed) return;
+
+    const resp = await fetch(btn.dataset.url, {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": csrftoken,
+        "X-Requested-With": "XMLHttpRequest",
+        "Accept": "application/json",
+      },
+    });
+
+    if (!resp.ok) {
+      return Swal.fire({icon:"error", title:"Error al eliminar"});
+    }
+    const data = await resp.json();
+    if (data.ok) {
+      row.remove();
+      Swal.fire({icon:"success", title: data.message, timer: 1600, showConfirmButton:false});
+    }
+  });
+</script>
+{% endblock %}

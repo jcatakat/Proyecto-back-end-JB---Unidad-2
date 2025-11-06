@@ -94,3 +94,22 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+from django.contrib.messages import constants as msg
+
+# Mensajes → mapea a Bootstrap
+MESSAGE_TAGS = {
+    msg.DEBUG:   "secondary",
+    msg.INFO:    "info",
+    msg.SUCCESS: "success",
+    msg.WARNING: "warning",
+    msg.ERROR:   "danger",
+}
+
+# (Opcional) Parámetros de sesión
+SESSION_COOKIE_AGE = 60 * 60 * 2       # 2 horas
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_SAVE_EVERY_REQUEST = False
+
+# Producción (cuando uses HTTPS)
+# SESSION_COOKIE_SECURE = True
+# SESSION_COOKIE_SAMESITE = 'Lax'  # o 'Strict'/'None' (None requiere Secure)
