@@ -17,11 +17,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
-    # apps nuestras
+    # apps
     "organizations",
     "dispositivos",
-    "accounts",  # para módulos/roles (semilla)
+    "accounts",
 ]
 
 MIDDLEWARE = [
@@ -56,10 +55,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "monitoreo.wsgi.application"
 
-# ── BD por .env (PyMySQL) ─────────────────────────────────────────────────────
-ENGINE = os.getenv("DB_ENGINE", "sqlite")
+# ── Base de datos: MySQL RDS via .env + SSL ───────────────────────────────────
+ENGINE = os.getenv("DB_ENGINE", "sqlite").strip().lower()
+
 if ENGINE == "mysql":
-    import pymysql; pymysql.install_as_MySQLdb()
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.mysql",
@@ -68,7 +67,11 @@ if ENGINE == "mysql":
             "PASSWORD": os.getenv("DB_PASSWORD"),
             "HOST": os.getenv("DB_HOST", "127.0.0.1"),
             "PORT": os.getenv("DB_PORT", "3306"),
-            "OPTIONS": {"charset": "utf8mb4"},
+            "OPTIONS": {
+                "charset": "utf8mb4",
+                # SSL para RDS (si require_secure_transport=1, esto es obligatorio)
+                "ssl": {"ca": os.getenv("DB_SSL_CA")} if os.getenv("DB_SSL_CA") else {},
+            },
         }
     }
 else:
@@ -88,28 +91,23 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
 
-# Para ImageField en Device
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 from django.contrib.messages import constants as msg
-
-# Mensajes → mapea a Bootstrap
 MESSAGE_TAGS = {
-    msg.DEBUG:   "secondary",
-    msg.INFO:    "info",
+    msg.DEBUG: "secondary",
+    msg.INFO: "info",
     msg.SUCCESS: "success",
     msg.WARNING: "warning",
-    msg.ERROR:   "danger",
+    msg.ERROR: "danger",
 }
 
-# (Opcional) Parámetros de sesión
-SESSION_COOKIE_AGE = 60 * 60 * 2       # 2 horas
+SESSION_COOKIE_AGE = 60 * 60 * 2
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_SAVE_EVERY_REQUEST = False
-
-# Producción (cuando uses HTTPS)
+# Para producción HTTPS:
 # SESSION_COOKIE_SECURE = True
-# SESSION_COOKIE_SAMESITE = 'Lax'  # o 'Strict'/'None' (None requiere Secure)
+# SESSION_COOKIE_SAMESITE = "Lax"
