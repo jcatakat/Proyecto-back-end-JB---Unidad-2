@@ -4,10 +4,13 @@ import os
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Carga .env desde la raíz del proyecto
 load_dotenv(BASE_DIR / ".env")
 
+# --- Configuración base ---
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-unsafe")
-DEBUG = os.getenv("DJANGO_DEBUG", "True") == "True"
+DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h.strip()]
 
 INSTALLED_APPS = [
@@ -17,6 +20,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+
+    # Apps del proyecto
     "organizations",
     "dispositivos",
     "accounts",
@@ -54,26 +59,49 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "monitoreo.wsgi.application"
 
-# ── BASE DE DATOS: OBLIGATORIO MySQL ──────────────────────────────────────────
-ENGINE = os.getenv("DB_ENGINE", "mysql")  # default mysql
+# --- Base de datos (MySQL en RDS con SSL) ---
+ENGINE = os.getenv("DB_ENGINE", "sqlite").lower()
+
 if ENGINE == "mysql":
+    # Depende de mysqlclient (MySQLdb). El warning de Pylance en VSCode es visual, no afecta en servidor.
+    DB_NAME = os.getenv("DB_NAME")
+    DB_USER = os.getenv("DB_USER")
+    DB_PASSWORD = os.getenv("DB_PASSWORD")
+    DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
+    DB_PORT = os.getenv("DB_PORT", "3306")
+
+    # Ruta del bundle CA de RDS (debe existir en el EC2)
+    DB_SSL_CA = os.getenv("DB_SSL_CA", "/etc/ssl/certs/aws-rds/rds-combined-ca-bundle.pem")
+    SSL_OPTIONS = {"ca": DB_SSL_CA} if DB_SSL_CA else None
+
+    # Construimos OPTIONS y forzamos agregar ssl si hay CA
+    DB_OPTIONS = {"charset": "utf8mb4"}
+    if SSL_OPTIONS:
+        DB_OPTIONS["ssl"] = SSL_OPTIONS
+
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.mysql",
-            "NAME": os.getenv("DB_NAME"),
-            "USER": os.getenv("DB_USER"),
-            "PASSWORD": os.getenv("DB_PASSWORD"),
-            "HOST": os.getenv("DB_HOST", "127.0.0.1"),
-            "PORT": os.getenv("DB_PORT", "3306"),
-            "OPTIONS": {
-                "charset": "utf8mb4",
-                # Fuerza SSL hacia RDS
-                "ssl": {"ca": os.getenv("DB_SSL_CA")},
-            },
+            "NAME": DB_NAME,
+            "USER": DB_USER,
+            "PASSWORD": DB_PASSWORD,
+            "HOST": DB_HOST,
+            "PORT": DB_PORT,
+            "OPTIONS": DB_OPTIONS,
         }
     }
+
+    # Chequeo defensivo: si RDS exige SSL y no tenemos CA, avisa claramente
+    if "ssl" not in DATABASES["default"]["OPTIONS"]:
+        raise RuntimeError("Falta configurar DB_SSL_CA para conexión SSL a RDS (requerido).")
 else:
-    raise RuntimeError("Debes usar MySQL: configura DB_ENGINE=mysql en .env")
+    # Fallback solo para desarrollo local (no se usa en tu evaluación)
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / os.getenv("DB_NAME", "db.sqlite3"),
+        }
+    }
 
 LANGUAGE_CODE = "es-cl"
 TIME_ZONE = "America/Santiago"
@@ -97,9 +125,11 @@ MESSAGE_TAGS = {
     msg.WARNING: "warning",
     msg.ERROR:   "danger",
 }
+
+# Sesión (opcional)
 SESSION_COOKIE_AGE = 60 * 60 * 2
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_SAVE_EVERY_REQUEST = False
-# Cuando actives HTTPS de verdad, habilita:
+# Para prod con HTTPS:
 # SESSION_COOKIE_SECURE = True
-# SESSION_COOKIE_SAMESITE = "Lax"
+# SESSION_COOKIE_SAMESITE = 'Lax'
