@@ -17,7 +17,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # apps
     "organizations",
     "dispositivos",
     "accounts",
@@ -55,9 +54,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "monitoreo.wsgi.application"
 
-# ── Base de datos: MySQL RDS via .env + SSL ───────────────────────────────────
-ENGINE = os.getenv("DB_ENGINE", "sqlite").strip().lower()
-
+# ── BASE DE DATOS: OBLIGATORIO MySQL ──────────────────────────────────────────
+ENGINE = os.getenv("DB_ENGINE", "mysql")  # default mysql
 if ENGINE == "mysql":
     DATABASES = {
         "default": {
@@ -69,18 +67,13 @@ if ENGINE == "mysql":
             "PORT": os.getenv("DB_PORT", "3306"),
             "OPTIONS": {
                 "charset": "utf8mb4",
-                # SSL para RDS (si require_secure_transport=1, esto es obligatorio)
-                "ssl": {"ca": os.getenv("DB_SSL_CA")} if os.getenv("DB_SSL_CA") else {},
+                # Fuerza SSL hacia RDS
+                "ssl": {"ca": os.getenv("DB_SSL_CA")},
             },
         }
     }
 else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / os.getenv("DB_NAME", "db.sqlite3"),
-        }
-    }
+    raise RuntimeError("Debes usar MySQL: configura DB_ENGINE=mysql en .env")
 
 LANGUAGE_CODE = "es-cl"
 TIME_ZONE = "America/Santiago"
@@ -98,16 +91,15 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 from django.contrib.messages import constants as msg
 MESSAGE_TAGS = {
-    msg.DEBUG: "secondary",
-    msg.INFO: "info",
+    msg.DEBUG:   "secondary",
+    msg.INFO:    "info",
     msg.SUCCESS: "success",
     msg.WARNING: "warning",
-    msg.ERROR: "danger",
+    msg.ERROR:   "danger",
 }
-
 SESSION_COOKIE_AGE = 60 * 60 * 2
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_SAVE_EVERY_REQUEST = False
-# Para producción HTTPS:
+# Cuando actives HTTPS de verdad, habilita:
 # SESSION_COOKIE_SECURE = True
 # SESSION_COOKIE_SAMESITE = "Lax"
