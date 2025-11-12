@@ -5,48 +5,133 @@
   <meta charset="UTF-8" />
   <title>{% block title %}EcoEnergy{% endblock %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+  <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  
+  <!-- SweetAlert2 -->
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  
   <style>
-    body{background:#f7f7fa;}
-    .card{border-radius:12px}
+    body {
+      background: #f7f7fa;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .card {
+      border-radius: 12px;
+    }
+    main {
+      flex: 1;
+    }
+    .navbar-brand {
+      font-weight: bold;
+      font-size: 1.5rem;
+    }
   </style>
+  
   {% block extra_head %}{% endblock %}
 </head>
 <body>
+
+<!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container">
-    <a class="navbar-brand" href="{% url 'dashboard' %}">EcoEnergy</a>
+    <a class="navbar-brand" href="{% url 'dashboard' %}">
+      <i class="bi bi-lightning-charge-fill text-warning"></i>
+      EcoEnergy
+    </a>
     <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
       <span class="navbar-toggler-icon"></span>
     </button>
+    
     <div id="nav" class="collapse navbar-collapse">
+      <!-- Menú izquierdo -->
       <ul class="navbar-nav me-auto">
-        <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'device_list' %}">Dispositivos</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'measurement_list' %}">Mediciones</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'alert_list' %}">Alertas</a></li>
-        {% if perms.dispositivos.view_zone %}
-        <li class="nav-item"><a class="nav-link" href="{% url 'zona_list' %}">Zonas</a></li>
+        {% if request.user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'dashboard' %}">
+              <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'device_list' %}">
+              <i class="bi bi-cpu"></i> Dispositivos
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'measurement_list' %}">
+              <i class="bi bi-graph-up"></i> Mediciones
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'alert_list' %}">
+              <i class="bi bi-exclamation-triangle"></i> Alertas
+            </a>
+          </li>
+          {% if perms.dispositivos.view_zone %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'zona_list' %}">
+              <i class="bi bi-geo-alt"></i> Zonas
+            </a>
+          </li>
+          {% endif %}
         {% endif %}
       </ul>
 
-      <div class="d-flex gap-2">
+      <!-- Usuario Dropdown (derecha) -->
+      <ul class="navbar-nav">
         {% if request.user.is_authenticated %}
-          <span class="navbar-text text-light small">
-            Hola, {{ request.user.username }}
-          </span>
-          {# si tienes una ruta de logout #}
-          <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">Salir</a>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" 
+               data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-person-circle"></i>
+              Hola, {{ request.user.username }}
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+              <li>
+                <a class="dropdown-item" href="{% url 'user_profile' %}">
+                  <i class="bi bi-person-circle"></i> Mi Perfil
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{% url 'change_password' %}">
+                  <i class="bi bi-key"></i> Cambiar Contraseña
+                </a>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              {% if request.user.is_staff %}
+                <li>
+                  <a class="dropdown-item" href="/admin/" target="_blank">
+                    <i class="bi bi-gear"></i> Admin Django
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+              {% endif %}
+              <li>
+                <a class="dropdown-item text-danger" href="{% url 'logout' %}">
+                  <i class="bi bi-box-arrow-right"></i> Salir
+                </a>
+              </li>
+            </ul>
+          </li>
         {% else %}
-          <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm">Iniciar sesión</a>
-          <a href="{% url 'register' %}" class="btn btn-outline-light btn-sm">Registrarse</a>
+          <li class="nav-item">
+            <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm">
+              <i class="bi bi-box-arrow-in-right"></i> Iniciar sesión
+            </a>
+          </li>
         {% endif %}
-      </div>
+      </ul>
     </div>
   </div>
 </nav>
 
-{# === BLOQUE DE MENSAJES (flash) — Añadido === #}
+<!-- Mensajes Flash -->
 {% if messages %}
   <div class="container mt-3">
     {% for message in messages %}
@@ -57,19 +142,24 @@
     {% endfor %}
   </div>
 {% endif %}
-{# === FIN BLOQUE MENSAJES === #}
 
+<!-- Contenido Principal -->
 <main class="container my-4">
   {% block content %}{% endblock %}
 </main>
 
+<!-- Footer -->
 <footer class="text-center text-muted py-4">
   &copy; {{ now|date:"Y" }} EcoEnergy
 </footer>
 
+<!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-{# Helper CSRF global para usar en fetch/AJAX como header "X-CSRFToken": window.CSRF_TOKEN #}
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- Helper CSRF global para AJAX -->
 <script>
   (function(){
     function getCookie(name) {
@@ -84,4 +174,3 @@
 {% block extra_js %}{% endblock %}
 </body>
 </html>
-

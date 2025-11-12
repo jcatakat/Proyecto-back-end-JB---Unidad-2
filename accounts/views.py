@@ -5,6 +5,41 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth.models import User
+from .forms import UserProfileForm
+
+@login_required
+def user_profile(request):
+    """Editar perfil del usuario"""
+    if request.method == 'POST':
+        form = UserProfileForm(request.POST, request.FILES, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '✅ Perfil actualizado correctamente.')
+            return redirect('user_profile')
+    else:
+        form = UserProfileForm(instance=request.user)
+    
+    return render(request, 'accounts/profile.html', {'form': form})
+
+@login_required
+def change_password(request):
+    """Cambiar contraseña del usuario"""
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)  # Mantener sesión activa
+            messages.success(request, '✅ Contraseña cambiada exitosamente.')
+            return redirect('user_profile')
+        else:
+            messages.error(request, '❌ Por favor corrige los errores.')
+    else:
+        form = PasswordChangeForm(request.user)
+    
+    return render(request, 'accounts/change_password.html', {'form': form})
 
 def logout_view(request):
     # Limpia claves de sesión opcionales (si no usas, se ignoran)

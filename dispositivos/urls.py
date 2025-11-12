@@ -1,6 +1,7 @@
 # dispositivos/urls.py
 from django.urls import path
 from .views import base, zones, devices
+from accounts import views as account_views
 
 urlpatterns = [
     # Home / dashboard y vistas existentes
@@ -23,4 +24,8 @@ urlpatterns = [
     path("dispositivos/<int:pk>/editar/", devices.device_edit, name="device_edit"),
     path("dispositivos/<int:pk>/eliminar/", devices.device_delete_ajax, name="device_delete_ajax"),
     path("dispositivos/exportar/", devices.device_export_xlsx, name="device_export"),
+
+    # Perfil de usuario
+    path("perfil/", account_views.user_profile, name="user_profile"),
+    path("cambiar-contrasena/", account_views.change_password, name="change_password"),
 ]
