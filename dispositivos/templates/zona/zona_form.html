@@ -1,20 +1,88 @@
 {% extends "base.html" %}
+
 {% block title %}{{ accion }} Zona{% endblock %}
+
 {% block content %}
-<div class="card p-3">
-  <h5 class="mb-3">{{ accion }} Zona</h5>
-  <form method="post" novalidate>
-    {% csrf_token %}
-    <div class="mb-3">
-      {{ form.name.label_tag }} {{ form.name }}
-      {% if form.name.errors %}<div class="text-danger">{{ form.name.errors }}</div>{% endif %}
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <div class="card">
+        <div class="card-header {% if accion == 'Crear' %}bg-primary{% else %}bg-warning{% endif %} text-white">
+          <h4 class="mb-0">
+            <i class="bi {% if accion == 'Crear' %}bi-plus-circle{% else %}bi-pencil{% endif %}"></i>
+            {{ accion }} Zona
+          </h4>
+        </div>
+        <div class="card-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+            
+            <!-- Campo Nombre -->
+            <div class="mb-3">
+              <label for="{{ form.name.id_for_label }}" class="form-label fw-bold">
+                {{ form.name.label }} <span class="text-danger">*</span>
+              </label>
+              {{ form.name }}
+              {% if form.name.errors %}
+                <div class="text-danger mt-1">
+                  {% for error in form.name.errors %}
+                    <small>{{ error }}</small>
+                  {% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text">
+                Mínimo 3 caracteres, máximo 100. Debe ser único por organización.
+              </div>
+            </div>
+            
+            <!-- Campo Descripción (si existe en el form) -->
+            {% if form.description %}
+            <div class="mb-3">
+              <label for="{{ form.description.id_for_label }}" class="form-label fw-bold">
+                {{ form.description.label }}
+              </label>
+              {{ form.description }}
+              {% if form.description.errors %}
+                <div class="text-danger mt-1">
+                  {% for error in form.description.errors %}
+                    <small>{{ error }}</small>
+                  {% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text">
+                Descripción opcional de la zona (máximo 500 caracteres).
+              </div>
+            </div>
+            {% endif %}
+            
+            <!-- Campo Organización -->
+            <div class="mb-3">
+              <label for="{{ form.organization.id_for_label }}" class="form-label fw-bold">
+                {{ form.organization.label }} <span class="text-danger">*</span>
+              </label>
+              {{ form.organization }}
+              {% if form.organization.errors %}
+                <div class="text-danger mt-1">
+                  {% for error in form.organization.errors %}
+                    <small>{{ error }}</small>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <!-- Botones de acción -->
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn {% if accion == 'Crear' %}btn-primary{% else %}btn-warning{% endif %}">
+                <i class="bi bi-save"></i> Guardar
+              </button>
+              <a href="{% url 'zona_list' %}" class="btn btn-secondary">
+                <i class="bi bi-x-circle"></i> Cancelar
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
-    <div class="mb-3">
-      {{ form.organization.label_tag }} {{ form.organization }}
-      {% if form.organization.errors %}<div class="text-danger">{{ form.organization.errors }}</div>{% endif %}
-    </div>
-    <button class="btn btn-success" type="submit">Guardar</button>
-    <a class="btn btn-secondary" href="{% url 'zona_list' %}">Cancelar</a>
-  </form>
+  </div>
 </div>
 {% endblock %}

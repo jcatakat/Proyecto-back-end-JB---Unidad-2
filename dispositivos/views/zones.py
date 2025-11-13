@@ -68,7 +68,7 @@ def zona_list(request):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CREATE
+# CREATE - con validaciones mejoradas
 # ─────────────────────────────────────────────────────────────────────────────
 @login_required
 @permission_or_redirect("dispositivos.add_zone", "zona_list", "No tienes permiso para crear zonas.")
@@ -76,31 +76,81 @@ def zona_create(request):
     if request.method == "POST":
         form = ZoneForm(request.POST)
         if form.is_valid():
+            # Validación adicional: verificar duplicados
+            nombre = form.cleaned_data.get('name')
+            organization = form.cleaned_data.get('organization')
+            
+            if Zone.objects.filter(name__iexact=nombre, organization=organization).exists():
+                messages.error(request, f'❌ Ya existe una zona llamada "{nombre}" en esta organización.')
+                return render(request, "zona/zona_form.html", {"form": form, "accion": "Crear"})
+            
+            # Validación: longitud mínima
+            if len(nombre) < 3:
+                messages.error(request, '❌ El nombre debe tener al menos 3 caracteres.')
+                return render(request, "zona/zona_form.html", {"form": form, "accion": "Crear"})
+            
             form.save()
-            messages.success(request, "Zona creada exitosamente")
+            messages.success(request, f'✅ Zona "{nombre}" creada exitosamente.')
             return redirect("zona_list")
-        messages.error(request, "Corrige los errores")
+        else:
+            # Mostrar errores específicos del formulario
+            for field, errors in form.errors.items():
+                for error in errors:
+                    if field == '__all__':
+                        messages.error(request, f'❌ {error}')
+                    else:
+                        field_label = form.fields[field].label or field
+                        messages.error(request, f'❌ {field_label}: {error}')
     else:
         form = ZoneForm()
+    
     return render(request, "zona/zona_form.html", {"form": form, "accion": "Crear"})
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# UPDATE
+# UPDATE - con validaciones mejoradas
 # ─────────────────────────────────────────────────────────────────────────────
 @login_required
 @permission_or_redirect("dispositivos.change_zone", "zona_list", "No tienes permiso para editar zonas.")
 def zona_edit(request, pk):
     zona = get_object_or_404(Zone, pk=pk)
+    
     if request.method == "POST":
         form = ZoneForm(request.POST, instance=zona)
         if form.is_valid():
+            # Validación adicional: verificar duplicados (excluyendo la zona actual)
+            nombre = form.cleaned_data.get('name')
+            organization = form.cleaned_data.get('organization')
+            
+            duplicado = Zone.objects.filter(
+                name__iexact=nombre, 
+                organization=organization
+            ).exclude(pk=pk).exists()
+            
+            if duplicado:
+                messages.error(request, f'❌ Ya existe otra zona llamada "{nombre}" en esta organización.')
+                return render(request, "zona/zona_form.html", {"form": form, "accion": "Editar"})
+            
+            # Validación: longitud mínima
+            if len(nombre) < 3:
+                messages.error(request, '❌ El nombre debe tener al menos 3 caracteres.')
+                return render(request, "zona/zona_form.html", {"form": form, "accion": "Editar"})
+            
             form.save()
-            messages.success(request, "Zona actualizada correctamente")
+            messages.success(request, f'✅ Zona "{nombre}" actualizada correctamente.')
             return redirect("zona_list")
-        messages.error(request, "Corrige los errores")
+        else:
+            # Mostrar errores específicos del formulario
+            for field, errors in form.errors.items():
+                for error in errors:
+                    if field == '__all__':
+                        messages.error(request, f'❌ {error}')
+                    else:
+                        field_label = form.fields[field].label or field
+                        messages.error(request, f'❌ {field_label}: {error}')
     else:
         form = ZoneForm(instance=zona)
+    
     return render(request, "zona/zona_form.html", {"form": form, "accion": "Editar"})
 
 
@@ -111,15 +161,24 @@ def zona_edit(request, pk):
 @require_POST
 def zona_delete_ajax(request, pk):
     if not request.user.has_perm("dispositivos.delete_zone"):
-        return JsonResponse({"ok": False, "message": "No tienes permiso para eliminar."}, status=403)
+        return JsonResponse({"ok": False, "message": "❌ No tienes permiso para eliminar zonas."}, status=403)
 
     if request.headers.get("x-requested-with") != "XMLHttpRequest":
         return HttpResponseBadRequest("Solo AJAX")
 
     zona = get_object_or_404(Zone, pk=pk)
     nombre = zona.name
+    
+    # Verificar si la zona tiene dispositivos asociados
+    if zona.device_set.exists():
+        count = zona.device_set.count()
+        return JsonResponse({
+            "ok": False, 
+            "message": f"❌ No se puede eliminar la zona '{nombre}' porque tiene {count} dispositivo(s) asociado(s). Elimina o reasigna los dispositivos primero."
+        }, status=400)
+    
     zona.delete()
-    return JsonResponse({"ok": True, "message": f"Zona '{nombre}' eliminada"})
+    return JsonResponse({"ok": True, "message": f"✅ Zona '{nombre}' eliminada exitosamente."})
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -129,6 +188,7 @@ def zona_delete_ajax(request, pk):
 def zona_export_xlsx(request):
     import openpyxl
     from openpyxl.utils import get_column_letter
+    from openpyxl.styles import Font, PatternFill, Alignment
 
     q = (request.GET.get("q") or "").strip()
     sort = request.GET.get("sort", "name")
@@ -144,20 +204,37 @@ def zona_export_xlsx(request):
     ws = wb.active
     ws.title = "Zonas"
 
-    headers = ["ID", "Nombre", "Organización"]
+    # Encabezados con estilo
+    headers = ["ID", "Nombre", "Organización", "Descripción"]
     ws.append(headers)
+    
+    # Estilo para encabezados
+    header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
 
+    # Datos
     for z in qs:
-        ws.append([z.id, z.name, getattr(z.organization, "name", "")])
+        ws.append([
+            z.id, 
+            z.name, 
+            getattr(z.organization, "name", ""), 
+            z.description or ""
+        ])
 
-    # Ancho de columnas simple
+    # Ancho de columnas automático
     for col in ws.columns:
         length = max(len(str(cell.value)) if cell.value else 0 for cell in col)
-        ws.column_dimensions[get_column_letter(col[0].column)].width = min(max(10, length + 2), 40)
+        ws.column_dimensions[get_column_letter(col[0].column)].width = min(max(12, length + 2), 50)
 
+    # Respuesta HTTP
     resp = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-    resp["Content-Disposition"] = 'attachment; filename="zonas.xlsx"'
+    resp["Content-Disposition"] = 'attachment; filename="zonas_ecoenergy.xlsx"'
     wb.save(resp)
     return resp
