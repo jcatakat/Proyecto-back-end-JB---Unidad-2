@@ -3,7 +3,7 @@ from django.urls import path
 from .views import base, zones, devices
 from accounts import views as account_views
 
-uurlpatterns = [
+urlpatterns = [
     # Home / dashboard
     path("", base.dashboard, name="dashboard"),
     
