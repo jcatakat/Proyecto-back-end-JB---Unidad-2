@@ -3,11 +3,15 @@ from django.urls import path
 from .views import base, zones, devices
 from accounts import views as account_views
 
-urlpatterns = [
-    # Home / dashboard y vistas existentes
+uurlpatterns = [
+    # Home / dashboard
     path("", base.dashboard, name="dashboard"),
-    path("devices/", base.device_list, name="device_list"),
+    
+    # Dispositivos - USA devices.device_list_advanced
+    path("devices/", devices.device_list_advanced, name="device_list"),
     path("devices/<int:pk>/", base.device_detail, name="device_detail"),
+    
+    # Mediciones y alertas
     path("measurements/", base.measurement_list, name="measurement_list"),
     path("alerts/", base.alert_list, name="alert_list"),
 
@@ -18,13 +22,12 @@ urlpatterns = [
     path("zonas/<int:pk>/eliminar/", zones.zona_delete_ajax, name="zona_delete_ajax"),
     path("zonas/exportar/", zones.zona_export_xlsx, name="zona_export"),
 
-
+    # Dispositivos avanzados (con buscador/paginador)
     path("dispositivos/", devices.device_list_advanced, name="device_list_advanced"),
     path("dispositivos/nuevo/", devices.device_create, name="device_create"),
     path("dispositivos/<int:pk>/editar/", devices.device_edit, name="device_edit"),
     path("dispositivos/<int:pk>/eliminar/", devices.device_delete_ajax, name="device_delete_ajax"),
     path("dispositivos/exportar/", devices.device_export_xlsx, name="device_export"),
-
     # Perfil de usuario
     path("perfil/", account_views.user_profile, name="user_profile"),
     path("cambiar-contrasena/", account_views.change_password, name="change_password"),
